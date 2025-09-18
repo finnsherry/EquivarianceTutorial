@@ -58,7 +58,7 @@ class PDEGCNN(nn.Module):
             lnn.LiftM2Cartesian(
                 in_channels=1, out_channels=c, orientations=8, kernel_size=5
             ),
-            nn.BatchNorm3d(6, track_running_stats=False),
+            nn.BatchNorm3d(c, track_running_stats=False),
             nn.ReLU(),
         )
 
