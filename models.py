@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import lietorch.nn as lnn
 
@@ -74,11 +75,12 @@ class PDEGCNN(nn.Module):
         self.fc = nn.Sequential(
             nn.Flatten(),
             nn.Dropout(0.1),
-            nn.Linear(5 * 5, self.classes),
+            nn.Linear(c, self.classes),
         )
 
     def forward(self, x):
         x = self.lift(x)
-        x = self.pde(x).max(dim=(-2, -1))  # Single "invariant" per channel.
+        x = self.pde(x)
+        x = torch.amax(x, dim=(-2, -1))  # Single "invariant" per channel.
         x = self.fc(x)
         return x
