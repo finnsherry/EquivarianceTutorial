@@ -11,9 +11,10 @@ import lietorch
 from tqdm import tqdm
 import sty
 import numpy as np
+from models import CNN, PDEGCNN
 
 # Model
-MODEL = lietorch.models.rotnist.GroupM2Classifier4
+MODEL = PDEGCNN
 EPOCHS = 60
 LR = 0.05
 LR_GAMMA = 0.96
