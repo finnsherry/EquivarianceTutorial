@@ -4,7 +4,7 @@ Run FashionMNIST classification.
 
 import torch
 import torch.nn.functional as F
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
 from torchvision.datasets import FashionMNIST
 from torchvision.transforms import Compose, ToTensor, Normalize
 import lietorch
@@ -44,6 +44,30 @@ def test(model, device, test_loader):
     test_loss = np.mean(test_loss)
     acc_score = np.mean(acc_score)
     print("test_loss: ", test_loss)
+    print("acc_score: ", acc_score)
+
+
+def val(model, device, test_loader):
+    """
+    Evaluate the model
+    """
+    model.eval()
+    val_loss = []
+    acc_score = []
+
+    with torch.no_grad():
+        for x, y in test_loader:
+            x, y = x.to(device), y.to(device)
+            output = model(x)
+
+            val_loss.append(loss(output, y).item())
+            y = y.cpu().view(-1)
+            _, prediction = torch.max(output.cpu(), dim=1)
+            acc_score.append((y == prediction).sum().item() / float(y.numel()))
+
+    val_loss = np.mean(val_loss)
+    acc_score = np.mean(acc_score)
+    print("val_loss: ", val_loss)
     print("acc_score: ", acc_score)
 
 
@@ -99,25 +123,34 @@ def train_model(architecture):
             + sty.rs.all
         )
         train(model, device, train_loader, optimizer)
-        test(model, device, test_loader)
+        val(model, device, val_loader)
         scheduler.step()
+    test(model, device, test_loader)
     end = perf_counter()
-    print("train time: ", float(end - start))    
+    print("train time: ", float(end - start))
+    torch.save(model.state_dict(), f"{architecture.__module__}.pth")
 
 if __name__ == "__main__":
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
     transforms = Compose((ToTensor(), Normalize(0.5, 0.5)))
+    train_set, val_set = random_split(FashionMNIST(".", train=True, transform=transforms, download=True), (0.88, 0.12))
+    test_set = FashionMNIST(".", train=False, transform=transforms, download=True),
+
     train_loader = DataLoader(
-        FashionMNIST(".", train=True, transform=transforms, download=True),
+        train_set,
         batch_size=BATCH_SIZE,
         shuffle=True,
     )
+    val_loader = DataLoader(
+        val_set,
+        batch_size=512,
+        shuffle=True,
+    )
     test_loader = DataLoader(
-        FashionMNIST(".", train=False, transform=transforms, download=True),
+        test_set,
         batch_size=512,
         shuffle=False,
     )
