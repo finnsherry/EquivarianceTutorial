@@ -2,6 +2,7 @@
 Run FashionMNIST classification.
 """
 
+import os
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, random_split
@@ -98,37 +99,39 @@ def loss(output, y):
     return F.cross_entropy(output, y)
 
 def train_model(architecture):
-    # instanciate model
-    model = architecture().to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), weight_decay=WEIGHT_DECAY, lr=LR)
-    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, LR_GAMMA)
+    if not os.path.exists(f"{architecture.__name__}.pth"):
+        model = architecture().to(device)
+        optimizer = torch.optim.AdamW(model.parameters(), weight_decay=WEIGHT_DECAY, lr=LR)
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, LR_GAMMA)
 
-    total_params = sum(p.numel() for p in model.parameters(recurse=True))
+        total_params = sum(p.numel() for p in model.parameters(recurse=True))
 
-    print(
-        f"Model: {architecture.__module__}."
-        + sty.fg.li_green
-        + f"{architecture.__name__}"
-        + sty.rs.all
-        + f" with {total_params} parameters"
-    )
-
-    start = perf_counter()
-    for epoch in range(1, EPOCHS + 1):
         print(
-            sty.fg.white
-            + sty.bg.li_blue
-            + sty.ef.b
-            + f"Epoch {epoch}/{EPOCHS}:"
+            f"Model: {architecture.__module__}."
+            + sty.fg.li_green
+            + f"{architecture.__name__}"
             + sty.rs.all
+            + f" with {total_params} parameters"
         )
-        train(model, device, train_loader, optimizer)
-        val(model, device, val_loader)
-        scheduler.step()
-    test(model, device, test_loader)
-    end = perf_counter()
-    print("train time: ", float(end - start))
-    torch.save(model.state_dict(), f"{architecture.__module__}.pth")
+
+        start = perf_counter()
+        for epoch in range(1, EPOCHS + 1):
+            print(
+                sty.fg.white
+                + sty.bg.li_blue
+                + sty.ef.b
+                + f"Epoch {epoch}/{EPOCHS}:"
+                + sty.rs.all
+            )
+            train(model, device, train_loader, optimizer)
+            val(model, device, val_loader)
+            scheduler.step()
+        test(model, device, test_loader)
+        end = perf_counter()
+        print("train time: ", float(end - start))
+        torch.save(model.state_dict(), f"{architecture.__name__}.pth")
+    else:
+        print(f"{architecture.__name__} has already been trained! Skipping.")
 
 if __name__ == "__main__":
     torch.backends.cudnn.deterministic = True
@@ -137,7 +140,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     transforms = Compose((ToTensor(), Normalize(0.5, 0.5)))
     train_set, val_set = random_split(FashionMNIST(".", train=True, transform=transforms, download=True), (0.88, 0.12))
-    test_set = FashionMNIST(".", train=False, transform=transforms, download=True),
+    test_set = FashionMNIST(".", train=False, transform=transforms, download=True)
 
     train_loader = DataLoader(
         train_set,

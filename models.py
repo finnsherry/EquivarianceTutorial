@@ -65,10 +65,8 @@ class PDEGCNN(nn.Module):
 
         self.pde = nn.Sequential(
             lnn.CDEPdeLayerM2(c, c, self.kernel_size, self.its, self.alpha),
-            lnn.SpatialResampleM2(size=(14, 14)),
             nn.Dropout3d(0.1),
             lnn.CDEPdeLayerM2(c, c, self.kernel_size, self.its, self.alpha),
-            lnn.SpatialResampleM2(size=(5, 5)),
             lnn.MaxProjectM2(),
         )
 
