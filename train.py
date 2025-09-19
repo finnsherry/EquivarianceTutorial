@@ -127,7 +127,8 @@ def train_model(architecture):
         scheduler.step()
     test(model, device, test_loader)
     end = perf_counter()
-    print("train time: ", float(end - start))    
+    print("train time: ", float(end - start))
+    torch.save(model.state_dict(), f"{architecture.__module__}.pth")
 
 if __name__ == "__main__":
     torch.backends.cudnn.deterministic = True
