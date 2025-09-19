@@ -12,9 +12,10 @@ from tqdm import tqdm
 import sty
 import numpy as np
 from models import CNN, PDEGCNN
+from time import perf_counter
 
 # Model
-MODEL = PDEGCNN
+MODELS = [CNN, PDEGCNN]
 EPOCHS = 60
 LR = 0.05
 LR_GAMMA = 0.96
@@ -50,6 +51,7 @@ def train(model, device, train_loader, optimizer):
     """Train one epoch"""
     model.train()
     train_loss = []
+    start = perf_counter()
     for x, y in tqdm(
         train_loader,
         desc="Training",
@@ -63,12 +65,44 @@ def train(model, device, train_loader, optimizer):
         train_loss.append(float(batch_loss.cpu().item()))
         batch_loss.backward()
         optimizer.step()
-    print("train_loss: ", train_loss)
+    end = perf_counter()
+    print("train_loss: ", np.mean(train_loss))
+    print("epoch time: ", float(end - start))
 
 
 def loss(output, y):
     return F.cross_entropy(output, y)
 
+def train_model(architecture):
+    # instanciate model
+    model = architecture().to(device)
+    optimizer = torch.optim.AdamW(model.parameters(), weight_decay=WEIGHT_DECAY, lr=LR)
+    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, LR_GAMMA)
+
+    total_params = sum(p.numel() for p in model.parameters(recurse=True))
+
+    print(
+        f"Model: {architecture.__module__}."
+        + sty.fg.li_green
+        + f"{architecture.__name__}"
+        + sty.rs.all
+        + f" with {total_params} parameters"
+    )
+
+    start = perf_counter()
+    for epoch in range(1, EPOCHS + 1):
+        print(
+            sty.fg.white
+            + sty.bg.li_blue
+            + sty.ef.b
+            + f"Epoch {epoch}/{EPOCHS}:"
+            + sty.rs.all
+        )
+        train(model, device, train_loader, optimizer)
+        test(model, device, test_loader)
+        scheduler.step()
+    end = perf_counter()
+    print("train time: ", float(end - start))    
 
 if __name__ == "__main__":
     torch.backends.cudnn.deterministic = True
@@ -94,29 +128,5 @@ if __name__ == "__main__":
         f'Using device "{device}": {torch.cuda.get_device_name(device)} (compute capability {cc[0]}.{cc[1]})'
     )
 
-    # instanciate model
-    model = MODEL().to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), weight_decay=WEIGHT_DECAY, lr=LR)
-    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, LR_GAMMA)
-
-    total_params = sum(p.numel() for p in model.parameters(recurse=True))
-
-    print(
-        f"Model: {MODEL.__module__}."
-        + sty.fg.li_green
-        + f"{MODEL.__name__}"
-        + sty.rs.all
-        + f" with {total_params} parameters"
-    )
-
-    for epoch in range(1, EPOCHS + 1):
-        print(
-            sty.fg.white
-            + sty.bg.li_blue
-            + sty.ef.b
-            + f"Epoch {epoch}/{EPOCHS}:"
-            + sty.rs.all
-        )
-        train(model, device, train_loader, optimizer)
-        test(model, device, test_loader)
-        scheduler.step()
+    for model in MODELS:
+        train_model(model)
