@@ -150,6 +150,7 @@ if __name__ == "__main__":
         shuffle=True,
     )
     test_loader = DataLoader(
+        test_set,
         batch_size=512,
         shuffle=False,
     )
