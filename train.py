@@ -15,6 +15,11 @@ import numpy as np
 from models import CNN, PDEGCNN
 from time import perf_counter
 
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 # Model
 MODELS = [CNN, PDEGCNN]
 EPOCHS = 60
@@ -48,7 +53,7 @@ def test(model, device, test_loader):
     print("acc_score: ", acc_score)
 
 
-def val(model, device, test_loader):
+def val(model, device, val_loader):
     """
     Evaluate the model
     """
@@ -57,7 +62,7 @@ def val(model, device, test_loader):
     acc_score = []
 
     with torch.no_grad():
-        for x, y in test_loader:
+        for x, y in val_loader:
             x, y = x.to(device), y.to(device)
             output = model(x)
 
@@ -98,10 +103,13 @@ def train(model, device, train_loader, optimizer):
 def loss(output, y):
     return F.cross_entropy(output, y)
 
+
 def train_model(architecture):
     if not os.path.exists(f"{architecture.__name__}.pth"):
         model = architecture().to(device)
-        optimizer = torch.optim.AdamW(model.parameters(), weight_decay=WEIGHT_DECAY, lr=LR)
+        optimizer = torch.optim.AdamW(
+            model.parameters(), weight_decay=WEIGHT_DECAY, lr=LR
+        )
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, LR_GAMMA)
 
         total_params = sum(p.numel() for p in model.parameters(recurse=True))
@@ -128,18 +136,17 @@ def train_model(architecture):
             scheduler.step()
         test(model, device, test_loader)
         end = perf_counter()
-        print("train time: ", float(end - start))
+        print("train time: ", end - start)
         torch.save(model.state_dict(), f"{architecture.__name__}.pth")
     else:
         print(f"{architecture.__name__} has already been trained! Skipping.")
 
-if __name__ == "__main__":
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if __name__ == "__main__":
     transforms = Compose((ToTensor(), Normalize(0.5, 0.5)))
-    train_set, val_set = random_split(FashionMNIST(".", train=True, transform=transforms, download=True), (0.88, 0.12))
+    train_set, val_set = random_split(
+        FashionMNIST(".", train=True, transform=transforms, download=True), (0.88, 0.12)
+    )
     test_set = FashionMNIST(".", train=False, transform=transforms, download=True)
 
     train_loader = DataLoader(

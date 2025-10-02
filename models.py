@@ -44,6 +44,8 @@ class CNN(nn.Module):
 
 
 class PDEGCNN(nn.Module):
+    """Convection-Dilation-Erosion PDE-G-CNN."""
+
     its = 1
     kernel_size = [5, 5, 5]
     alpha = 0.65
@@ -79,6 +81,6 @@ class PDEGCNN(nn.Module):
     def forward(self, x):
         x = self.lift(x)
         x = self.pde(x)
-        x = torch.amax(x, dim=(-2, -1))  # Single "invariant" per channel.
+        x = torch.amax(x, dim=(-2, -1))  # Single invariant per channel.
         x = self.fc(x)
         return x
