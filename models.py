@@ -67,7 +67,6 @@ class PDEGCNN(nn.Module):
 
         self.pde = nn.Sequential(
             lnn.CDEPdeLayerM2(c, c, self.kernel_size, self.its, self.alpha),
-            # nn.Dropout3d(0.1),
             lnn.CDEPdeLayerM2(c, c, self.kernel_size, self.its, self.alpha),
             lnn.CDEPdeLayerM2(c, c, self.kernel_size, self.its, self.alpha),
             lnn.MaxProjectM2(),
@@ -75,7 +74,6 @@ class PDEGCNN(nn.Module):
 
         self.fc = nn.Sequential(
             nn.Flatten(),
-            # nn.Dropout(0.1),
             nn.Linear(c, self.classes),
         )
 
