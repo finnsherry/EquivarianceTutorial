@@ -55,7 +55,7 @@ class PDEGCNN(nn.Module):
         super().__init__()
 
         self.classes = classes
-        c = 16
+        c = 24
 
         self.lift = nn.Sequential(
             lnn.LiftM2Cartesian(
