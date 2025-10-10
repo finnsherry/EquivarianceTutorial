@@ -61,12 +61,10 @@ class PDEGCNN(nn.Module):
             lnn.LiftM2Cartesian(
                 in_channels=1, out_channels=c, orientations=8, kernel_size=5
             ),
-            nn.BatchNorm3d(c, track_running_stats=False),
             nn.ReLU(),
         )
 
         self.pde = nn.Sequential(
-            lnn.CDEPdeLayerM2(c, c, self.kernel_size, self.its, self.alpha),
             lnn.CDEPdeLayerM2(c, c, self.kernel_size, self.its, self.alpha),
             lnn.CDEPdeLayerM2(c, c, self.kernel_size, self.its, self.alpha),
             lnn.MaxProjectM2(),
